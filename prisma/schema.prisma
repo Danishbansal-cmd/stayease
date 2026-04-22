@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  HOST
+  GUEST
+}
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String?
+  role          Role
+  avatar        String?
+  phonenumber   String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bookings      Booking[]
+  reviews       Review[]
+  listings      Listing[]
+}
+
+model Listing {
+  id                String   @id @default(cuid())
+  title             String
+  pricePerNight     Int //in paisa
+
+  address           String
+  city              String
+  country           String
+
+  lat               Float?
+  long              Float?
+
+  images            String[]
+  description       String
+
+  maxGuests         Int
+  bedrooms          Int
+  beds              Int
+  bathrooms         Int
+  amenities         String[]
+
+  host              User    @relation(fields: [hostId], references: [id])
+  hostId            String
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  bookings          Booking[]
+  reviews           Review[]
+}
+
+model Booking {
+  id                String   @id @default(cuid())
+  totalPrice        Int //in paisa
+  status            BookingStatus
+
+  checkInDate       DateTime
+  checkOutDate      DateTime
+
+  persons           Int
+
+  user              User     @relation(fields: [userId],references: [id])
+  userId            String
+
+  listing           Listing  @relation(fields: [listingId], references: [id])
+  listingId         String
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Review {
+  id                String   @id @default(cuid())
+  rating            Int // 1 == (100)
+  comment           String
+
+  listing           Listing  @relation(fields: [listingId], references: [id])
+  listingId         String
+  user              User     @relation(fields: [userId], references: [id])
+  userId            String
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, listingId])
+}
