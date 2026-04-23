@@ -69,6 +69,7 @@ model Listing {
 
   bookings          Booking[]
   reviews           Review[]
+  availabity        Availability[]
 }
 
 model Booking {
@@ -105,4 +106,15 @@ model Review {
   updatedAt         DateTime @updatedAt
 
   @@unique([userId, listingId])
+}
+
+model Availability {
+  id                String    @id @default(cuid())
+
+  date              DateTime
+  listingId         String
+  isAvailable       Boolean   @default(true)
+  listing           Listing   @relation(fields: [listingId], references: [id])
+
+  @@unique([listingId, date])
 }
