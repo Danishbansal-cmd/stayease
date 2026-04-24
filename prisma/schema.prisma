@@ -23,6 +23,17 @@ enum BookingStatus {
   CANCELLED
 }
 
+enum ListingType {
+  RENTED
+  OWNED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+
 model User {
   id            String   @id @default(cuid())
   name          String
@@ -38,12 +49,14 @@ model User {
   bookings      Booking[]
   reviews       Review[]
   listings      Listing[]
+  couponUsage   CouponUsage[]
 }
 
 model Listing {
   id                String   @id @default(cuid())
   title             String
   pricePerNight     Int //in paisa
+  type              ListingType @default(RENTED)
 
   address           String
   city              String
@@ -88,6 +101,9 @@ model Booking {
   listing           Listing  @relation(fields: [listingId], references: [id])
   listingId         String
 
+  coupon            Coupon   @relation(fields: [couponId], references: [id])
+  couponId          String
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
@@ -117,4 +133,44 @@ model Availability {
   listing           Listing   @relation(fields: [listingId], references: [id])
 
   @@unique([listingId, date])
+}
+
+model Coupon{
+  id                String    @id @default(cuid())
+  code              String    @unique // e.g. "WELCOME10"
+
+  discountType      DiscountType  @default(FIXED_AMOUNT)
+  discountValue     Int     // e.g. 10 (for 10%) or 50000 (for 500 INR in paisa)
+
+  minAmount         Int?    // optional minimum booking amount
+  maxDiscount       Int?    // for percentage cap
+
+  maxUses           Int?    // How many times total this code can be used
+  usedCount         Int       @default(0)
+
+  perUserLimit      Int?    // per user usage
+
+  validFrom         DateTime
+  validUntil        DateTime
+  isActive          Boolean   @default(true)
+
+  bookings          Booking[] // Track which bookings used this coupon
+  couponUsage       CouponUsage[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model CouponUsage{
+  id                String   @id @default(cuid())
+
+  userId            String
+  couponId          String
+
+  usageCount        Int      @default(0)
+
+  user              User    @relation(fields: [userId], references: [id])
+  coupon            Coupon  @relation(fields: [couponId], references: [id])
+
+  @@unique([userId, couponId])
 }
