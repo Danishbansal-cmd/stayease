@@ -7,19 +7,53 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const city = searchParams.get("city");
+    const country = searchParams.get("country");
     const minPrice = searchParams.get("minPrice");
     const maxPrice = searchParams.get("maxPrice");
     const persons = searchParams.get("persons");
     const checkIn = searchParams.get("checkIn");
     const checkOut = searchParams.get("checkOut");
     const searchTitle = searchParams.get("searchTitle");
+    const targetLat = parseFloat(searchParams.get("lat") || "");
+    const targetLng = parseFloat(searchParams.get("lng") || "");
+    const radiusInKm = parseFloat(searchParams.get("radius") || "50"); // default 50km
 
     // Build dynamic filter
     const where: any = {};
 
+    if (!isNaN(targetLat) && !isNaN(targetLng)) {
+      // 1 degree of latitude is ~111 km
+      const latDelta = radiusInKm / 111.0;
+      // Longitude distance changes based on latitude, so we use cosine
+      const lngDelta =
+        radiusInKm / (111.0 * Math.cos(targetLat * (Math.PI / 180)));
+
+      const minLat = targetLat - latDelta;
+      const maxLat = targetLat + latDelta;
+      const minLng = targetLng - lngDelta;
+      const maxLng = targetLng + lngDelta;
+
+      // 2. Add this to your existing `where` object
+      where.lat = {
+        gte: minLat,
+        lte: maxLat,
+      };
+      where.long = {
+        gte: minLng,
+        lte: maxLng,
+      };
+    }
+
     if (city) {
       where.city = {
         contains: city,
+        mode: "insensitive",
+      };
+    }
+
+    if (country) {
+      where.country = {
+        contains: country,
         mode: "insensitive",
       };
     }
@@ -50,6 +84,10 @@ export async function GET(req: Request) {
     }
 
     if (checkIn && checkOut) {
+      where.availableFrom = { lte: new Date(checkIn) };
+      where.availableTo = { gte: new Date(checkOut) };
+
+      // Check there are no overlapping bookings
       where.bookings = {
         none: {
           AND: [
@@ -62,6 +100,17 @@ export async function GET(req: Request) {
           ],
         },
       };
+
+      // Check the host hasn't manually blocked any of these dates
+      where.availability = {
+        none: {
+          isAvailable: false,
+          date: {
+            gte: new Date(checkIn),
+            lt: new Date(checkOut)
+          }
+        }
+      }
     }
 
     const listings = await prisma.listing.findMany({
@@ -96,10 +145,21 @@ export async function POST(req: Request) {
       return errorResponse(result.error.message, 400);
     }
 
+    const { blockedDates, ...listingData } = result.data;
+
     const listing = await prisma.listing.create({
       data: {
-        ...result.data,
+        ...listingData,
         hostId: userId,
+        availability:
+          blockedDates && blockedDates.length > 0
+            ? {
+                create: blockedDates.map((date) => ({
+                  date: date,
+                  isAvailable: false,
+                })),
+              }
+            : undefined,
       },
     });
 

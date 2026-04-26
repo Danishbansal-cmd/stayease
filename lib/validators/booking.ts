@@ -11,4 +11,5 @@ export const bookingSchema = z.object({
   
   listingId: z.string(),
   userId: z.string(),
+  couponId: z.string().optional(),
 });

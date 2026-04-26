@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       return errorResponse("You can only review after booking", 400);
     }
 
-    // 🧠 Check if already reviewed
+    // Check if already reviewed
     const existingReview = await prisma.review.findUnique({
       where: {
         userId_listingId: {

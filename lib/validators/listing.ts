@@ -4,6 +4,7 @@ import { z } from "zod";
 export const listingSchema = z.object({
     title: z.string(),
     description: z.string(),
+    type: z.enum(["RENTED", "OWNED"]),
 
     pricePerNight: z.number().positive(),
 
@@ -18,6 +19,10 @@ export const listingSchema = z.object({
     bedrooms: z.number().int().min(0),
     beds: z.number().int().positive(),
     bathrooms: z.number().int().positive(),
+
+    availableFrom: z.string().transform((str) => new Date(str)),
+    availableTo: z.string().transform((str) => new Date(str)),
+    blockedDates: z.array(z.string().transform((str) => new Date(str))).optional(),
 
     images: z.array(z.string()),
     amenities: z.array(z.string()),

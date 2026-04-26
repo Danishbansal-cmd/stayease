@@ -35,6 +35,6 @@ export function middleware(req: NextRequest){
 
 // Protect specific routes
 export const config = {
-  matcher: ["/api/listings/:path*", "/api/bookings/:path*"],
+  matcher: ["/api/listings/:path*", "/api/bookings/:path*", "/api/review/:path*"],
 };
 

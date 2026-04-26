@@ -39,7 +39,7 @@ model User {
   name          String
   email         String   @unique
   password      String?
-  role          Role
+  role          Role     @default(GUEST)
   avatar        String?
   phonenumber   String?
 
@@ -74,6 +74,9 @@ model Listing {
   bathrooms         Int
   amenities         String[]
 
+  availableFrom     DateTime
+  availableTo       DateTime
+
   host              User    @relation(fields: [hostId], references: [id])
   hostId            String
 
@@ -82,13 +85,13 @@ model Listing {
 
   bookings          Booking[]
   reviews           Review[]
-  availabity        Availability[]
+  availability      Availability[]
 }
 
 model Booking {
   id                String   @id @default(cuid())
   totalPrice        Int //in paisa
-  status            BookingStatus
+  status            BookingStatus @default(PENDING)
 
   checkInDate       DateTime
   checkOutDate      DateTime
@@ -101,8 +104,8 @@ model Booking {
   listing           Listing  @relation(fields: [listingId], references: [id])
   listingId         String
 
-  coupon            Coupon   @relation(fields: [couponId], references: [id])
-  couponId          String
+  coupon            Coupon?  @relation(fields: [couponId], references: [id])
+  couponId          String?
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -129,7 +132,7 @@ model Availability {
 
   date              DateTime
   listingId         String
-  isAvailable       Boolean   @default(true)
+  isAvailable       Boolean   @default(false)
   listing           Listing   @relation(fields: [listingId], references: [id])
 
   @@unique([listingId, date])

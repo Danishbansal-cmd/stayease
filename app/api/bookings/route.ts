@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       return errorResponse(result.error.message, 400);
     }
 
-    const { listingId, checkInDate, checkOutDate, persons } = result.data;
+    const { listingId, checkInDate, checkOutDate, persons, couponId } = result.data;
 
     // invalid date check
     if (checkInDate >= checkOutDate) {
@@ -59,33 +59,53 @@ export async function POST(req: Request) {
       return errorResponse("Listing not found", 404);
     }
 
-    //  persons(guest) validation
-    if (persons > listing.maxGuests) {
-      return errorResponse("Persons(Guest) limit exceeded", 400);
+    // Check macro availability
+    if (
+      new Date(checkInDate) < listing.availableFrom ||
+      new Date(checkOutDate) > listing.availableTo
+    ) {
+      return errorResponse("Listing is not available for these dates", 400);
     }
 
     // Check for conflicting/overlapping bookings
-    const existingBooking = await prisma.booking.findFirst({
+    const overlappingBookings = await prisma.booking.count({
       where: {
         listingId,
         status: {
           not: "CANCELLED",
         },
+        // an overlap happens if:
+        // (existing.checkInDate < new.checkOutDate) and (existing.checkOutDate > new.checkInDate)
         AND: [
-          // an overlap happens if:
-          // (existing.checkInDate < new.checkOutDate) and (existing.checkOutDate > new.checkInDate)
-          {
-            checkInDate: { lt: checkOutDate },
-          },
-          {
-            checkOutDate: { gt: checkInDate },
-          },
+          { checkInDate: { lt: new Date(checkOutDate) } },
+          { checkOutDate: { gt: new Date(checkInDate) } },
         ],
       },
     });
 
-    if (existingBooking) {
-      return errorResponse("Listing already booked for selected dates", 400);
+    if (overlappingBookings > 0) {
+      return errorResponse("Listing is already booked for these dates", 400);
+    }
+
+    // Check for explicitly blocked dates
+    const blockedDatesCount = await prisma.availability.count({
+      where: {
+        listingId,
+        isAvailable: false,
+        date: {
+          gte: new Date(checkInDate),
+          lt: new Date(checkOutDate),
+        },
+      },
+    });
+
+    if (blockedDatesCount > 0) {
+      return errorResponse("Some dates in your range are blocked by the host", 400);
+    }
+
+    // persons(guest) validation
+    if (persons > listing.maxGuests) {
+      return errorResponse("Persons(Guest) limit exceeded", 400);
     }
 
     const nights = Math.ceil(
@@ -93,7 +113,63 @@ export async function POST(req: Request) {
     );
 
     // Calculate total price based on nights stayed and listing's daily price
-    const totalPrice = nights * listing.pricePerNight;
+    let totalPrice = nights * listing.pricePerNight;
+    
+    if (couponId) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { id: couponId }
+      });
+
+      if (!coupon) return errorResponse("Invalid coupon", 400);
+      if (!coupon.isActive) return errorResponse("Coupon is not active", 400);
+      
+      const now = new Date();
+      if (now < coupon.validFrom || now > coupon.validUntil) {
+        return errorResponse("Coupon has expired or is not yet valid", 400);
+      }
+
+      if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
+        return errorResponse("Coupon usage limit reached", 400);
+      }
+
+      if (coupon.minAmount && totalPrice < coupon.minAmount) {
+        return errorResponse("Minimum booking amount not met for this coupon", 400);
+      }
+
+      if (coupon.perUserLimit) {
+        const usage = await prisma.couponUsage.findUnique({
+          where: { userId_couponId: { userId, couponId } }
+        });
+        if (usage && usage.usageCount >= coupon.perUserLimit) {
+          return errorResponse("You have reached your usage limit for this coupon", 400);
+        }
+      }
+
+      // Calculate discount
+      let discountAmount = 0;
+      if (coupon.discountType === "PERCENTAGE") {
+        discountAmount = Math.floor((totalPrice * coupon.discountValue) / 100);
+        if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+          discountAmount = coupon.maxDiscount;
+        }
+      } else {
+        discountAmount = coupon.discountValue;
+      }
+
+      totalPrice = Math.max(0, totalPrice - discountAmount);
+
+      // Increment coupon usage counts
+      await prisma.coupon.update({
+        where: { id: couponId },
+        data: { usedCount: { increment: 1 } }
+      });
+
+      await prisma.couponUsage.upsert({
+        where: { userId_couponId: { userId, couponId } },
+        update: { usageCount: { increment: 1 } },
+        create: { userId, couponId, usageCount: 1 }
+      });
+    }
 
     const booking = await prisma.booking.create({
       data: {
@@ -104,6 +180,7 @@ export async function POST(req: Request) {
         persons,
         totalPrice,
         status: "CONFIRMED",
+        ...(couponId ? { couponId } : {}),
       },
     });
 
