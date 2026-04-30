@@ -1,6 +1,7 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { bookingSchema } from "@/lib/validators/booking";
+import { bookingRateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
   try {
@@ -33,6 +34,17 @@ export async function POST(req: Request) {
 
     if (!userId) {
       return errorResponse("Unauthorized", 401);
+    }
+
+    // Get client IP
+    const ip = req.headers.get("x-forwarded-for") ?? "anonymous";
+    const identifier = `${ip}:${userId}`;
+
+    // rate limit check
+    const { success } = await bookingRateLimit.limit(identifier);
+
+    if (!success) {
+      return errorResponse("Too many booking attempts. Please try again later.", 429);
     }
 
     const body = await req.json();

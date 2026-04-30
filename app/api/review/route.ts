@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { reviewSchema } from "@/lib/validators/review";
+import { reviewRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
@@ -8,6 +9,17 @@ export async function POST(req: Request) {
 
     if (!userId) {
       return errorResponse("Unauthorized", 401);
+    }
+
+    // Get client IP
+    const ip = req.headers.get("x-forwarded-for") ?? "anonymous";
+    const identifier = `${ip}:${userId}`;
+
+    // rate limit check
+    const { success } = await reviewRateLimit.limit(identifier);
+
+    if (!success) {
+      return errorResponse("Too many review attempts. Please try again later.", 429);
     }
 
     const body = await req.json();

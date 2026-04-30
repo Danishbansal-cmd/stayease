@@ -4,7 +4,13 @@ import type { NextRequest } from "next/server";
 
 
 export function middleware(req: NextRequest){
-    const token = req.cookies.get("token")?.value;
+    // Try to get token from Authorization header first, then from cookies
+    const authHeader = req.headers.get("authorization");
+    let token = authHeader?.split(" ")[1];
+
+    if (!token) {
+        token = req.cookies.get("accessToken")?.value || req.cookies.get("token")?.value;
+    }
 
     if(!token){
         return NextResponse.json(

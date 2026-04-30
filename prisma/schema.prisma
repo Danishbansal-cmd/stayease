@@ -50,6 +50,18 @@ model User {
   reviews       Review[]
   listings      Listing[]
   couponUsage   CouponUsage[]
+  refreshTokens RefreshToken[] //one user multiple refresh-tokens
+}
+
+model RefreshToken {
+  id                String    @id @default(cuid())
+  token             String    @unique
+
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+
+  expiresAt         DateTime
+  createdAt         DateTime  @default(now())
 }
 
 model Listing {

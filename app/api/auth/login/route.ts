@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import bcrypt from 'bcrypt';
-import { signInToken } from "@/lib/auth";
+import { signInToken, generateRefreshToken } from "@/lib/auth";
 import { loginRateLimit } from "@/lib/rate-limit";
 
 
@@ -45,15 +45,35 @@ export async function POST(req: Request) {
             return errorResponse("Invalid credentials", 401);
         }
 
-        const token = signInToken(user.id);
+        const accessToken = signInToken(user.id);
+        const refreshToken = generateRefreshToken();
 
-        const response = successResponse("Login successful", { token });
+        // Save refresh token in DB (valid for 7 days)
+        await prisma.refreshToken.create({
+            data: {
+                token: refreshToken,
+                userId: user.id,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            }
+        });
 
-        response.headers.set(
+        // Send access token in the JSON response
+        const response = successResponse("Login successful", { accessToken });
+
+        // Set the access token as a normal cookie (expires in 15 mins)
+        response.headers.append(
             "Set-Cookie",
-            `token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict ${
+            `accessToken=${accessToken}; Path=/; Max-Age=900; SameSite=Strict; ${
+                process.env.NODE_ENV === "production" ? "Secure" : ""
+            }`
+        );
+
+        // Set the refresh token as an HttpOnly cookie (expires in 7 days)
+        response.headers.append(
+            "Set-Cookie",
+            `refreshToken=${refreshToken}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict; ${
                 process.env.NODE_ENV === "production"
-                    ? "Secure;"
+                    ? "Secure"
                     : ""
             }`
         );
