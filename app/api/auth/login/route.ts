@@ -45,7 +45,7 @@ export async function POST(req: Request) {
             return errorResponse("Invalid credentials", 401);
         }
 
-        const accessToken = signInToken(user.id);
+        const accessToken = signInToken(user.id, user.role);
         const refreshToken = generateRefreshToken();
 
         // Save refresh token in DB (valid for 7 days)

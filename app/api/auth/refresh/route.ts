@@ -14,7 +14,8 @@ export async function POST(req: Request) {
 
         // Find the refresh token in the database
         const storedToken = await prisma.refreshToken.findUnique({
-            where: { token: refreshToken }
+            where: { token: refreshToken },
+            include: { user: true }
         });
 
         if (!storedToken) {
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
         }
 
         // Token is valid! Rotate it. This is called token rotation
-        const newAccessToken = signInToken(storedToken.userId);
+        const newAccessToken = signInToken(storedToken.userId, storedToken.user.role);
         const newRefreshToken = generateRefreshToken();
 
         // Transaction: delete old token, create new one

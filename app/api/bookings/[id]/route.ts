@@ -3,7 +3,7 @@ import { errorResponse, successResponse } from "@/lib/api-response";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const userId = req.headers.get("x-user-id");
@@ -12,7 +12,7 @@ export async function PATCH(
       return errorResponse("Unauthorized", 401);
     }
 
-    const bookingId = params.id;
+    const { id: bookingId } = await params;
 
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },

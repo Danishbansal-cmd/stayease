@@ -3,12 +3,13 @@ import { errorResponse, successResponse } from "@/lib/api-response";
 
 export async function GET(
   req: Request,
-  { params }: { params: { listingId: string } },
+  { params }: { params: Promise<{ listingId: string }> },
 ) {
   try {
+    const { listingId } = await params;
     const reviews = await prisma.review.findMany({
       where: {
-        listingId: params.listingId,
+        listingId,
       },
       include: {
         user: {
