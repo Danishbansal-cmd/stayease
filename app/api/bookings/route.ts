@@ -3,14 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/app/generated/prisma/client";
 import { bookingSchema } from "@/lib/validators/booking";
 import { bookingRateLimit } from "@/lib/rate-limit";
+import { verifyToken } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    const userId = req.headers.get("x-user-id");
-
-    if (!userId) {
-      return errorResponse("Unauthorized", 401);
-    }
+    const token = req.headers.get("x-access-token");
+    if (!token) return errorResponse("Unauthorized", 401);
+    
+    const decoded = verifyToken(token);
+    if (!decoded) return errorResponse("Invalid token", 401);
+    
+    const userId = decoded.userId;
 
     const bookings = await prisma.booking.findMany({
       where: { userId },
@@ -31,10 +34,18 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const userId = req.headers.get("x-user-id");
+    const token = req.headers.get("x-access-token");
+    if (!token) return errorResponse("Unauthorized", 401);
 
-    if (!userId) {
-      return errorResponse("Unauthorized", 401);
+    const decoded = verifyToken(token);
+    if (!decoded) return errorResponse("Invalid token", 401);
+
+    const userId = decoded.userId;
+    const role = decoded.role;
+
+    // Bookings: Only GUEST and ADMIN can create bookings
+    if (role !== "GUEST" && role !== "ADMIN") {
+      return errorResponse("Forbidden: Only guests can create bookings", 403);
     }
 
     // Get client IP

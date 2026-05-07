@@ -2,6 +2,7 @@ import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import Razorpay from "razorpay";
 import { Prisma } from "@/app/generated/prisma/client";
+import { verifyToken } from "@/lib/auth";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "",
@@ -13,11 +14,13 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = req.headers.get("x-user-id");
+    const token = req.headers.get("x-access-token");
+    if (!token) return errorResponse("Unauthorized", 401);
 
-    if (!userId) {
-      return errorResponse("Unauthorized", 401);
-    }
+    const decoded = verifyToken(token);
+    if (!decoded) return errorResponse("Invalid token", 401);
+
+    const userId = decoded.userId;
 
     const { id: bookingId } = await params;
 

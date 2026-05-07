@@ -1,6 +1,7 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { listingSchema } from "@/lib/validators/listing";
+import { verifyToken } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
@@ -132,10 +133,21 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const userId = req.headers.get("x-user-id");
-
-    if (!userId) {
+    const token = req.headers.get("x-access-token");
+    if (!token) {
       return errorResponse("Unauthorized", 401);
+    }
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return errorResponse("Invalid token", 401);
+    }
+    
+    const userId = decoded.userId;
+    const role = decoded.role;
+
+    // Listings: Only HOST and ADMIN can create, update, or delete listings
+    if (role !== "HOST" && role !== "ADMIN") {
+      return errorResponse("Forbidden: Only hosts and admins can manage listings", 403);
     }
 
     const body = await req.json();

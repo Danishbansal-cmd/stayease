@@ -2,13 +2,22 @@ import { prisma } from "@/lib/prisma";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { reviewSchema } from "@/lib/validators/review";
 import { reviewRateLimit } from "@/lib/rate-limit";
+import { verifyToken } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
-    const userId = req.headers.get("x-user-id");
+    const token = req.headers.get("x-access-token");
+    if (!token) return errorResponse("Unauthorized", 401);
 
-    if (!userId) {
-      return errorResponse("Unauthorized", 401);
+    const decoded = verifyToken(token);
+    if (!decoded) return errorResponse("Invalid token", 401);
+
+    const userId = decoded.userId;
+    const role = decoded.role;
+
+    // Reviews: Only GUEST and ADMIN can write reviews 
+    if (role !== "GUEST" && role !== "ADMIN") {
+      return errorResponse("Forbidden: Only guests can create reviews", 403);
     }
 
     // Get client IP
