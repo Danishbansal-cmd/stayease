@@ -108,17 +108,9 @@ export async function POST(
             }
           }
 
-          // Increment coupon usage counts securely inside the transaction
-          await tx.coupon.update({
-            where: { id: booking.couponId },
-            data: { usedCount: { increment: 1 } },
-          });
-
-          await tx.couponUsage.upsert({
-            where: { userId_couponId: { userId, couponId: booking.couponId } },
-            update: { usageCount: { increment: 1 } },
-            create: { userId, couponId: booking.couponId, usageCount: 1 },
-          });
+          // Note: We DO NOT increment the coupon here. 
+          // We only validate it so they don't proceed to payment if it's already invalid.
+          // The actual increment happens in the Webhook when payment succeeds.
         }
 
         // 4. Create Razorpay Order
@@ -139,12 +131,8 @@ export async function POST(
           },
         });
 
-        // 6. Update the booking status to CONFIRMED
-        await tx.booking.update({
-          where: { id: booking.id },
-          data: { status: "CONFIRMED" },
-        });
-
+        // 6. Return the order to the frontend so they can open the Razorpay checkout.
+        // We DO NOT confirm the booking or block availability here. That happens in the Webhook.
         return { order, paymentId: payment.id };
       },
       {
