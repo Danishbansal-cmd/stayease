@@ -57,6 +57,7 @@ model User {
   couponUsage   CouponUsage[]
   refreshTokens RefreshToken[] //one user multiple refresh-tokens
   payments      Payment[]
+  wishlist      Wishlist?
 }
 
 model RefreshToken {
@@ -104,6 +105,7 @@ model Listing {
   bookings          Booking[]
   reviews           Review[]
   availability      Availability[]
+  wishlists         Wishlist[]
 }
 
 model Booking {
@@ -215,3 +217,13 @@ model Payment {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
+
+model Wishlist {
+  id                String    @id @default(cuid())
+  
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  listings          Listing[]
+}
+
