@@ -1,9 +1,7 @@
 import Link from 'next/link';
 import styles from '../auth.module.css';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { SignupForm } from '@/components/SignupForm';
 
 export const metadata = {
   title: 'Sign Up - StayEase',
@@ -28,47 +26,7 @@ export default function SignupPage() {
         </CardHeader>
         
         <CardContent>
-          <form id="signup-form">
-            <div className="grid w-full items-center gap-5">
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="name" className="text-zinc-200">Full Name</Label>
-                <Input 
-                  type="text" 
-                  id="name" 
-                  placeholder="John Doe"
-                  className="bg-black/20 border-white/10 text-white placeholder:text-zinc-500 focus-visible:ring-cyan-400 focus-visible:ring-offset-0 h-12 rounded-none"
-                  required 
-                />
-              </div>
-
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="email" className="text-zinc-200">Email Address</Label>
-                <Input 
-                  type="email" 
-                  id="email" 
-                  placeholder="you@example.com"
-                  className="bg-black/20 border-white/10 text-white placeholder:text-zinc-500 focus-visible:ring-cyan-400 focus-visible:ring-offset-0 h-12 rounded-none"
-                  required 
-                />
-              </div>
-              
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="password" className="text-zinc-200">Password</Label>
-                <Input 
-                  type="password" 
-                  id="password" 
-                  placeholder="••••••••"
-                  className="bg-black/20 border-white/10 text-white placeholder:text-zinc-500 focus-visible:ring-cyan-400 focus-visible:ring-offset-0 h-12 rounded-none"
-                  required 
-                  minLength={8}
-                />
-              </div>
-              
-              <Button type="submit" id="signup-submit-button" className="w-full h-12 mt-2 bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold rounded-none hover:opacity-90 transition-opacity border-0 shadow-[0_4px_15px_rgba(34,211,238,0.3)] hover:shadow-[0_6px_20px_rgba(34,211,238,0.4)] text-base">
-                Sign Up
-              </Button>
-            </div>
-          </form>
+          <SignupForm />
         </CardContent>
         
         <CardFooter className="flex justify-center py-6 bg-black/40 border-t border-white/10 mt-6">

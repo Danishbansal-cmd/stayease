@@ -22,9 +22,8 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Explore</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/listings" className="hover:text-primary transition-colors">All Listings</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Featured Properties</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Popular Destinations</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Special Offers</Link></li>
+              <li><Link href="/" className="hover:text-primary transition-colors">Featured Properties</Link></li>
+              <li><Link href="/coupons" className="hover:text-primary transition-colors">Special Offers</Link></li>
             </ul>
           </div>
           

@@ -62,6 +62,81 @@ async function main() {
     },
   });
 
+  const listing2 = await prisma.listing.create({
+    data: {
+      title: 'Neon Cyber Loft',
+      pricePerNight: 15000, // $150
+      type: 'RENTED',
+      address: '404 Shibuya Crossing',
+      city: 'Tokyo',
+      country: 'Japan',
+      lat: 35.6595,
+      long: 139.7005,
+      images: [
+        'https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&q=80&w=800'
+      ],
+      description: 'A futuristic loft in the heart of Tokyo.',
+      maxGuests: 2,
+      bedrooms: 1,
+      beds: 1,
+      bathrooms: 1,
+      amenities: ['WiFi', 'Air Conditioning', 'Kitchen', 'City View'],
+      availableFrom: new Date(),
+      availableTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+      hostId: host.id,
+    },
+  });
+
+  const listing3 = await prisma.listing.create({
+    data: {
+      title: 'Historic Canal House',
+      pricePerNight: 22000, // $220
+      type: 'RENTED',
+      address: '101 Herengracht',
+      city: 'Amsterdam',
+      country: 'Netherlands',
+      lat: 52.3676,
+      long: 4.9041,
+      images: [
+        'https://images.unsplash.com/photo-1527853787696-f7be74f2e39a?auto=format&fit=crop&q=80&w=800'
+      ],
+      description: 'Charming 17th-century house on the famous canals.',
+      maxGuests: 4,
+      bedrooms: 2,
+      beds: 2,
+      bathrooms: 1,
+      amenities: ['WiFi', 'Heating', 'Kitchen', 'Waterfront'],
+      availableFrom: new Date(),
+      availableTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+      hostId: host.id,
+    },
+  });
+
+  const listing4 = await prisma.listing.create({
+    data: {
+      title: 'Rustic Mountain Cabin',
+      pricePerNight: 12000, // $120
+      type: 'OWNED',
+      address: '77 Pine Ridge',
+      city: 'Aspen',
+      country: 'USA',
+      lat: 39.1911,
+      long: -106.8175,
+      images: [
+        'https://images.unsplash.com/photo-1518733057094-95b53143d2a7?auto=format&fit=crop&q=80&w=800'
+      ],
+      description: 'Cozy cabin perfect for a winter getaway.',
+      maxGuests: 6,
+      bedrooms: 3,
+      beds: 4,
+      bathrooms: 2,
+      amenities: ['WiFi', 'Fireplace', 'Kitchen', 'Ski-in/Ski-out'],
+      availableFrom: new Date(),
+      availableTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+      hostId: host.id,
+    },
+  });
+
   console.log('Creating bookings...');
   // 4. Create Booking
   await prisma.booking.create({

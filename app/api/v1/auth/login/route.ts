@@ -57,8 +57,16 @@ export async function POST(req: Request) {
             }
         });
 
-        // Send access token in the JSON response
-        const response = successResponse("Login successful", { accessToken });
+        // Send access token and user info in the JSON response
+        const response = successResponse("Login successful", { 
+            accessToken,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
 
         // Set the access token as a normal cookie (expires in 15 mins)
         response.headers.append(
